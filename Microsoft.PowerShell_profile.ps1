@@ -61,48 +61,31 @@ function prompt {
     return " "
 }
 
-if ( (Get-Module -ListAvailable PsGet) -ne $null ) {
-    Import-Module PsGet
-} else {
-    Write-Warning "Missing PsGet module. See http://psget.net/ for details."
-}
+$modules = @(
+        @{ Name = 'PsGet'; OnSuccess = {}; OnMissing = { Write-Warning "See http://psget.net/" } },
+        @{ Name = 'Posh-Hg'; OnSuccess = { $global:HgPromptSettings.ModifiedForegroundColor = [ConsoleColor]::Cyan }; OnMissing = {} },
+        @{ Name = 'Posh-Git'; OnSuccess = {
+            $global:GitPromptSettings.WorkingForegroundColor = [ConsoleColor]::Cyan
+            $global:GitPromptSettings.UntrackedForegroundColor = [ConsoleColor]::Cyan
+            }; OnMissing = {  } },
+        @{ Name = 'psake'; OnSuccess = { New-Alias -Force psake Invoke-psake }; OnMissing = {  } },
+        @{ Name = 'pscx'; OnSuccess = {
+            # Undo some Pscx badness.
+            New-Alias -Force cd Set-Location
+            Remove-Item alias:touch
+            }; OnMissing = {  } },
+        @{ Name = 'psbits'; OnSuccess = {  }; OnMissing = {  } },
+        @{ Name = 'does_not_exist'; OnSuccess = {  }; OnMissing = {  } }
+    )
 
-if ( (Get-Module -ListAvailable Posh-Hg) -ne $null ) {
-    Import-Module Posh-Hg
-    $global:HgPromptSettings.ModifiedForegroundColor = [ConsoleColor]::Cyan
-    Write-Host -ForegroundColor $ProgressForegroundColor "Loaded Posh-Hg."
-} else {
-    Write-Warning "Missing Posh-Hg module."
-}
-
-if ( (Get-Module -ListAvailable Posh-Git) -ne $null ) {
-    Import-Module Posh-Git
-    $global:GitPromptSettings.WorkingForegroundColor = [ConsoleColor]::Cyan
-    $global:GitPromptSettings.UntrackedForegroundColor = [ConsoleColor]::Cyan
-    Write-Host -ForegroundColor $ProgressForegroundColor "Loaded Posh-Git."
-} else {
-    Write-Warning "Missing Posh-Git module."
-}
-
-if ( (Get-Module -ListAvailable psake) -ne $null ) {
-    Import-Module psake
-    New-Alias psake Invoke-psake
-    Write-Host -ForegroundColor $ProgressForegroundColor "Loaded psake."
-} else {
-    Write-Warning "Missing psake module."
-}
-
-if ( (Get-Module -ListAvailable Pscx) -ne $null ) {
-    Import-Module Pscx
-
-    # Undo some Pscx badness.
-    Remove-Item alias:cd
-    New-Alias cd Set-Location
-    Remove-Item alias:touch
-
-    Write-Host -ForegroundColor $ProgressForegroundColor "Loaded Pscx."
-} else {
-    Write-Warning "Missing Pscx module."
+$modules | % {
+    if (Get-Module -ListAvailable $_.Name) {
+        Write-Host -ForegroundColor $ProgressForegroundColor "Loaded $($_.Name)"
+        & $_.OnSuccess
+    } else {
+        Write-Warning "Missing $($_.Name) module."
+        & $_.OnMissing
+    }
 }
 
 $env:PATH = "$env:PATH;$env:USERPROFILE\Bin"
@@ -120,11 +103,7 @@ if ($isAdministrator) {
 New-Alias -Force help Get-Help
 
 $ScriptDirectory = Split-Path $MyInvocation.MyCommand.Path
-. (Join-Path $ScriptDirectory .\Scripts\PathCmdlets.ps1)
 . (Join-Path $ScriptDirectory .\Scripts\MediaCmdlets.ps1)
-. (Join-Path $ScriptDirectory .\Scripts\ModuleCmdlets.ps1)
-. (Join-Path $ScriptDirectory .\Scripts\Get-Netstat.ps1)
-
 
 $gvim = Join-Path ${env:ProgramFiles(x86)} 'Vim\vim73\gvim.exe'
 if ( !(Test-Path $gvim) ) {
