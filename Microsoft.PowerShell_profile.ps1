@@ -1,6 +1,11 @@
 $ProgressForegroundColor = 'Cyan'
 $PromptForegroundColor = 'Yellow'
 
+<#
+.SYNOPSIS
+
+Run a batch file and capture the output environment.
+#>
 function Get-Batchfile ($file) {
     $cmd = "`"$file`" & set"
     cmd /c $cmd | Foreach-Object {
@@ -9,6 +14,11 @@ function Get-Batchfile ($file) {
     }
 }
 
+<#
+.SYNOPSIS
+
+Is the current user running as administrator?
+#>
 function Is-Administrator() {
     $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object System.Security.Principal.WindowsPrincipal($identity)
@@ -19,6 +29,11 @@ function Is-Administrator() {
     $isAdministrator
 }
 
+<#
+.SYNOPSIS
+
+Set the environment for using Visual Studio tools. By default, this uses Visual Studio 2010.
+#>
 function VsVars32($version = "10.0") {
     $key = "HKLM:SOFTWARE\Wow6432Node\Microsoft\VisualStudio\" + $version
     if ( $(Test-Path $key) -eq $true ) {
@@ -44,7 +59,6 @@ function prompt {
 
     # Make .NET's current directory follow PowerShell's current directory, if possible.
     if ($PWD.Provider.Name -eq 'FileSystem') {
-#        Write-Host($PWD.Provider.Name) -foregroundcolor Red -nonewline
         [System.IO.Directory]::SetCurrentDirectory($(Get-Location))
     }
 
@@ -70,16 +84,14 @@ $modules = @(
             }; OnMissing = {  } },
         @{ Name = 'psake'; OnSuccess = { New-Alias -Force psake Invoke-psake }; OnMissing = {  } },
         @{ Name = 'pscx'; OnSuccess = {
-            # Undo some Pscx badness.
-            New-Alias -Force cd Set-Location
-            Remove-Item alias:touch
+            $Pscx:Preferences['CD_EchoNewLocation'] = $false
             }; OnMissing = {  } },
-        @{ Name = 'psbits'; OnSuccess = {  }; OnMissing = {  } },
-        @{ Name = 'does_not_exist'; OnSuccess = {  }; OnMissing = {  } }
+        @{ Name = 'psbits'; OnSuccess = {  }; OnMissing = {  } }
     )
 
 $modules | % {
     if (Get-Module -ListAvailable $_.Name) {
+	Import-Module $_.Name -DisableNameChecking
         Write-Host -ForegroundColor $ProgressForegroundColor "Loaded $($_.Name)"
         & $_.OnSuccess
     } else {
