@@ -1,4 +1,4 @@
-$ProgressForegroundColor = 'Cyan'
+﻿$ProgressForegroundColor = 'Cyan'
 $PromptForegroundColor = 'Yellow'
 
 <#

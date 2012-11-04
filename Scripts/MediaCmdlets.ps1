@@ -1,4 +1,4 @@
-$FLAC_PATH = 'C:\Program Files (x86)\FLAC\bin\flac.exe'
+﻿$FLAC_PATH = 'C:\Program Files (x86)\FLAC\bin\flac.exe'
 $LAME_PATH = 'C:\Program Files (x86)\LAME\lame.exe'
 
 $ProfilePath = (Split-Path $PROFILE)
