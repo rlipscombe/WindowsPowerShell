@@ -1,5 +1,7 @@
-﻿$ProgressForegroundColor = 'Cyan'
+$ProgressForegroundColor = 'Cyan'
 $PromptForegroundColor = 'Yellow'
+$PromptCwdForegroundColor = 'DarkGray'
+$PromptTitleTemplate = [System.Console]::Title
 
 <#
 .SYNOPSIS
@@ -32,9 +34,9 @@ function Is-Administrator() {
 <#
 .SYNOPSIS
 
-Set the environment for using Visual Studio tools. By default, this uses Visual Studio 2010.
+Set the environment for using Visual Studio tools. By default, this uses Visual Studio 2012.
 #>
-function VsVars32($version = "10.0") {
+function VsVars32($version = "11.0") {
     $key = "HKLM:SOFTWARE\Wow6432Node\Microsoft\VisualStudio\" + $version
     if ( $(Test-Path $key) -eq $true ) {
         $VsKey = get-ItemProperty $key
@@ -54,42 +56,66 @@ function VsVars32($version = "10.0") {
 function prompt {
     $realLASTEXITCODE = $LASTEXITCODE
 
+    # Put the path in the title, so that it appears in the task bar:
+    [System.Console]::Title = "{0} - {1}" -f $PWD, $PromptTitleTemplate
+
     # In case some app leaves it broken.
     [Console]::ResetColor()
 
     # Make .NET's current directory follow PowerShell's current directory, if possible.
     if ($PWD.Provider.Name -eq 'FileSystem') {
-        [System.IO.Directory]::SetCurrentDirectory($(Get-Location))
+        [System.IO.Directory]::SetCurrentDirectory($PWD)
     }
 
-    # Now for the actual prompt.
-    Write-Host($PWD) -nonewline -foregroundcolor $PromptForegroundColor
+    # Now for the actual prompt: working directory
+    Write-Host $PWD -nonewline -foregroundcolor $PromptCwdForegroundColor
 
+    # VCS (git, hg) status
     if (($PWD.Provider.Name -eq 'FileSystem') -and (Test-Path function:Write-VcsStatus)) {
     	Write-VcsStatus
     }
 
-    Write-Host(">") -nonewline -foregroundcolor $PromptForegroundColor
+    # Blank line
+    Write-Host 
+    Write-Host ">" -nonewline -foregroundcolor $PromptForegroundColor
 
     $LASTEXISTCODE = $realLASTEXITCODE
+    
+    # This is the actual prompt -- it's printed in the default console colours.
     return " "
 }
 
-$modules = @(
-        @{ Name = 'PsGet'; OnSuccess = {}; OnMissing = { Write-Warning "See http://psget.net/" } },
-        @{ Name = 'Posh-Hg'; OnSuccess = { $global:HgPromptSettings.ModifiedForegroundColor = [ConsoleColor]::Cyan }; OnMissing = {} },
-        @{ Name = 'Posh-Git'; OnSuccess = {
-            $global:GitPromptSettings.WorkingForegroundColor = [ConsoleColor]::Cyan
-            $global:GitPromptSettings.UntrackedForegroundColor = [ConsoleColor]::Cyan
-            }; OnMissing = {  } },
-        @{ Name = 'psake'; OnSuccess = { New-Alias -Force psake Invoke-psake }; OnMissing = {  } },
-        @{ Name = 'pscx'; OnSuccess = {
-            $Pscx:Preferences['CD_EchoNewLocation'] = $false
-            }; OnMissing = {  } },
-        @{ Name = 'psbits'; OnSuccess = {  }; OnMissing = {  } }
+$profile_modules = @(
+        @{ Name = 'PsGet';
+           OnSuccess = { $global:PsGetDestinationModulePath = $null };
+           OnMissing = { Write-Warning "See http://psget.net/" }
+        },
+        @{ Name = 'Posh-Hg';
+           OnSuccess = { $global:HgPromptSettings.ModifiedForegroundColor = [ConsoleColor]::Cyan };
+           OnMissing = {}
+        },
+        @{ Name = 'Posh-Git';
+           OnSuccess = {
+             $global:GitPromptSettings.WorkingForegroundColor = [ConsoleColor]::Cyan
+             $global:GitPromptSettings.UntrackedForegroundColor = [ConsoleColor]::Cyan
+           };
+           OnMissing = {}
+        },
+        @{ Name = 'psake';
+           OnSuccess = { New-Alias -Force psake Invoke-psake };
+           OnMissing = {}
+        },
+        @{ Name = 'pscx';
+           OnSuccess = { $Pscx:Preferences['CD_EchoNewLocation'] = $false };
+           OnMissing = {}
+        },
+        @{ Name = 'psbits';
+           OnSuccess = {};
+           OnMissing = {}
+        }
     )
 
-$modules | % {
+$profile_modules | % {
     if (Get-Module -ListAvailable $_.Name) {
 	Import-Module $_.Name -DisableNameChecking
         Write-Host -ForegroundColor $ProgressForegroundColor "Loaded $($_.Name)"
@@ -100,7 +126,11 @@ $modules | % {
     }
 }
 
-$env:PATH = "$env:PATH;$env:USERPROFILE\Bin"
+$ProfilePath = Split-Path $PROFILE
+$env:PATH += ";${env:USERPROFILE}\Bin"
+$env:PATH += ";${env:USERPROFILE}\Bin\Scripts"
+$env:PATH += ";$ProfilePath\Bin"
+$env:PATH += ";$ProfilePath\Scripts"
 VsVars32
 
 $isAdministrator = Is-Administrator
@@ -111,11 +141,11 @@ if ($isAdministrator) {
     [System.Console]::Title = [System.Console]::Title + " (System Modules)"
 }
 
+# Capture the current console title so that we can use it in "prompt", above.
+$PromptTitleTemplate = [System.Console]::Title
+
 # This removes the paging from 'help'. I prefer to scroll using the (gasp) scroll bar.
 New-Alias -Force help Get-Help
-
-$ScriptDirectory = Split-Path $MyInvocation.MyCommand.Path
-. (Join-Path $ScriptDirectory .\Scripts\MediaCmdlets.ps1)
 
 $gvim = Join-Path ${env:ProgramFiles(x86)} 'Vim\vim73\gvim.exe'
 if ( !(Test-Path $gvim) ) {
@@ -124,6 +154,9 @@ if ( !(Test-Path $gvim) ) {
 if ( Test-Path $gvim ) {
   New-Alias gvim $gvim
 }
+
+# Because.
+Set-StrictMode -Version $PSVersionTable.PSVersion
 
 # For Administrator logins, PoSh starts in C:\Windows\System32. Fix that.
 Set-Location $HOME
