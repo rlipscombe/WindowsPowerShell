@@ -126,6 +126,15 @@ $profile_modules | % {
     }
 }
 
+# TODO: Put this in psbits.
+function Download-String([string]$url)
+{
+    $web = New-Object System.Net.WebClient
+    $web.DownloadString($url)
+}
+
+New-Alias wget Download-String
+
 $ProfilePath = Split-Path $PROFILE
 $env:PATH += ";${env:USERPROFILE}\Bin"
 $env:PATH += ";${env:USERPROFILE}\Bin\Scripts"
