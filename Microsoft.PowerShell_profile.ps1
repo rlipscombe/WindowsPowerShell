@@ -3,6 +3,23 @@ $PromptForegroundColor = 'Yellow'
 $PromptCwdForegroundColor = 'DarkGray'
 $PromptTitleTemplate = [System.Console]::Title
 
+# Poor man's scheduler
+function Handle-ProfileTimer
+{
+    $file = 'C:\Users\rogerl\Desktop\Service Desk Plus.url'
+    if (Test-Path $file) {
+        Remove-Item $file
+    }
+}
+
+$profile_timer = New-Object System.Timers.Timer
+Register-ObjectEvent -InputObject $profile_timer -EventName Elapsed `
+    -Action { Handle-ProfileTimer } | Out-Null
+
+$profile_timer.Interval = 10 * 60 * 1000 # 10 minutes
+$profile_timer.Start()
+Handle-ProfileTimer
+
 <#
 .SYNOPSIS
 
@@ -58,6 +75,7 @@ function prompt {
 
     # Put the path in the title, so that it appears in the task bar:
     [System.Console]::Title = "{0} - {1}" -f $PWD, $PromptTitleTemplate
+    Update-ConsoleIcon
 
     # In case some app leaves it broken.
     [Console]::ResetColor()
@@ -72,7 +90,11 @@ function prompt {
 
     # VCS (git, hg) status
     if (($PWD.Provider.Name -eq 'FileSystem') -and (Test-Path function:Write-VcsStatus)) {
-    	Write-VcsStatus
+        try {
+            Write-VcsStatus
+        } catch {
+            # Ignore it.
+        }
     }
 
     # Blank line
@@ -142,6 +164,8 @@ $env:PATH += ";$ProfilePath\Bin"
 $env:PATH += ";$ProfilePath\Scripts"
 VsVars32
 
+. "$ProfilePath\Icons\Set-ConsoleIcon.ps1"
+
 $isAdministrator = Is-Administrator
 
 if ($isAdministrator) {
@@ -152,6 +176,19 @@ if ($isAdministrator) {
 
 # Capture the current console title so that we can use it in "prompt", above.
 $PromptTitleTemplate = [System.Console]::Title
+
+function Update-ConsoleIcon
+{
+    if ($PromptTitleTemplate -like '*Administrator*Visual Studio 11.0*') {
+        Set-ConsoleIcon "$ProfilePath\Icons\admin_vs11powershell.ico"
+    }
+    elseif ($PromptTitleTemplate -like '*Visual Studio 11.0*') {
+        Set-ConsoleIcon "$ProfilePath\Icons\vs11powershell.ico"
+    }
+    elseif ($PromptTitleTemplate -like '*Administrator*') {
+        Set-ConsoleIcon "$ProfilePath\Icons\admin_powershell.ico"
+    }
+}
 
 # This removes the paging from 'help'. I prefer to scroll using the (gasp) scroll bar.
 New-Alias -Force help Get-Help
