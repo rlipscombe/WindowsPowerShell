@@ -120,6 +120,7 @@ $profile_modules = @(
            OnSuccess = {
              $global:GitPromptSettings.WorkingForegroundColor = [ConsoleColor]::Cyan
              $global:GitPromptSettings.UntrackedForegroundColor = [ConsoleColor]::Cyan
+             $global:GitPromptSettings.EnableWindowTitle = $null
            };
            OnMissing = {}
         },
