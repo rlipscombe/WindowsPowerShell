@@ -17,6 +17,6 @@ Installation
 Other modules
 -------------
 
-    * PsGet
-    * Posh-Git
-    * pscx
+    * PsGet -- http://psget.net
+    * Posh-Git -- Install-Module Posh-Git
+    * pscx -- Install-Module pscx
