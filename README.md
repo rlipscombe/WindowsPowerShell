@@ -19,4 +19,4 @@ Other modules
 
 * PsGet -- http://psget.net
 * Posh-Git -- Install-Module Posh-Git
-* pscx -- Install-Module pscx
+* pscx -- http://pscx.codeplex.com/releases -- get v3.1.0.
