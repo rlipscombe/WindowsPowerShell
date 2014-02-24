@@ -3,23 +3,6 @@ $PromptForegroundColor = 'Yellow'
 $PromptCwdForegroundColor = 'DarkGray'
 $PromptTitleTemplate = [System.Console]::Title
 
-# Poor man's scheduler
-function Handle-ProfileTimer
-{
-    $file = 'C:\Users\rogerl\Desktop\Service Desk Plus.url'
-    if (Test-Path $file) {
-        Remove-Item $file
-    }
-}
-
-$profile_timer = New-Object System.Timers.Timer
-Register-ObjectEvent -InputObject $profile_timer -EventName Elapsed `
-    -Action { Handle-ProfileTimer } | Out-Null
-
-$profile_timer.Interval = 10 * 60 * 1000 # 10 minutes
-$profile_timer.Start()
-Handle-ProfileTimer
-
 <#
 .SYNOPSIS
 
@@ -112,10 +95,6 @@ $profile_modules = @(
            OnSuccess = { $global:PsGetDestinationModulePath = $null };
            OnMissing = { Write-Warning "See http://psget.net/" }
         },
-        @{ Name = 'Posh-Hg';
-           OnSuccess = { $global:HgPromptSettings.ModifiedForegroundColor = [ConsoleColor]::Cyan };
-           OnMissing = {}
-        },
         @{ Name = 'Posh-Git';
            OnSuccess = {
              $global:GitPromptSettings.WorkingForegroundColor = [ConsoleColor]::Cyan
@@ -124,16 +103,8 @@ $profile_modules = @(
            };
            OnMissing = {}
         },
-        @{ Name = 'psake';
-           OnSuccess = { New-Alias -Force psake Invoke-psake };
-           OnMissing = {}
-        },
         @{ Name = 'pscx';
            OnSuccess = { $Pscx:Preferences['CD_EchoNewLocation'] = $false };
-           OnMissing = {}
-        },
-        @{ Name = 'psbits';
-           OnSuccess = {};
            OnMissing = {}
         }
     )
@@ -148,15 +119,6 @@ $profile_modules | % {
         & $_.OnMissing
     }
 }
-
-# TODO: Put this in psbits.
-function Download-String([string]$url)
-{
-    $web = New-Object System.Net.WebClient
-    $web.DownloadString($url)
-}
-
-New-Alias wget Download-String
 
 $ProfilePath = Split-Path $PROFILE
 $env:PATH += ";${env:USERPROFILE}\Bin"
