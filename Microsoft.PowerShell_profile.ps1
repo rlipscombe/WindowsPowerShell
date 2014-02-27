@@ -156,7 +156,8 @@ function Update-ConsoleIcon
 # This removes the paging from 'help'. I prefer to scroll using the (gasp) scroll bar.
 New-Alias -Force help Get-Help
 
-$gvim = Join-Path ${env:ProgramFiles(x86)} 'Vim\vim73\gvim.exe'
+# gvim alias
+$gvim = Join-Path ${env:ProgramFiles(x86)} 'Vim\vim74\gvim.exe'
 if ( !(Test-Path $gvim) ) {
   $gvim = Join-Path $env:ProgramFiles 'Vim\vim73\gvim.exe'
 }
