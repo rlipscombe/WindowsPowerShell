@@ -90,6 +90,40 @@ function prompt {
     return " "
 }
 
+$ProfilePath = Split-Path $PROFILE
+$env:PATH += ";${env:USERPROFILE}\Bin"
+$env:PATH += ";${env:USERPROFILE}\Bin\Scripts"
+$env:PATH += ";$ProfilePath\Bin"
+$env:PATH += ";$ProfilePath\Scripts"
+
+# Console Colours
+Add-Type -Path (Join-Path $ProfilePath "ConsoleColors.dll")
+
+# Note: This assumes that you're using the default PowerShell background/foreground colour slots.
+[ConsoleColors.ConsoleEx]::SetColor('DarkMagenta', 'Black')
+[ConsoleColors.ConsoleEx]::SetColor('DarkYellow', 'Orange')
+
+# Aside: gnome-terminal "Tango" colour scheme:
+#
+# Black: 0,0,0
+# DarkRed: 204,0,0
+# DarkGreen: 78,154,6
+# DarkYellow: 196,160,0
+# DarkBlue: 52,101,164
+# DarkMagenta: 117,80,123
+# DarkCyan: 6,152,154
+# LightGray: 211,215,207
+# DarkGray: 85,87,83
+# LightRed: 239,41,41
+# LightGreen: 138,226,52
+# LightYellow: 252,233,79
+# LightBlue: 134,179,227
+# LightMagenta: 173,127,168
+# LightCyan: 52,226,226
+# White: 238,238,236
+#
+# Note that these don't map directly to the colour slots used by Windows, so that could be interesting.
+
 $profile_modules = @(
         @{ Name = 'PsGet';
            OnSuccess = { $global:PsGetDestinationModulePath = $null };
@@ -120,11 +154,6 @@ $profile_modules | % {
     }
 }
 
-$ProfilePath = Split-Path $PROFILE
-$env:PATH += ";${env:USERPROFILE}\Bin"
-$env:PATH += ";${env:USERPROFILE}\Bin\Scripts"
-$env:PATH += ";$ProfilePath\Bin"
-$env:PATH += ";$ProfilePath\Scripts"
 VsVars32
 
 . "$ProfilePath\Icons\Set-ConsoleIcon.ps1"
